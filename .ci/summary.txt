@@ -1,0 +1,11 @@
+Android 版本: android12
+内核版本: 5.10.226
+安全补丁级别: 2024-11
+KernelSU 变体: BakaSU
+配置名称: android12-5.10-226
+Git 提交: 2cc7b88190210d7d290c826a9118f6c238ae0701
+工作流地址: https://github.com/chenikunli/GKI_KernelSU_SUSFS/actions/runs/43611718515
+编译尝试次数: 1
+最终退出码: 1
+KSU 提交日期: 2026-11-10 07:47:42 +0800
+SUSFS 提交日期: 未知
