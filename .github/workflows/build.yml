@@ -1536,6 +1536,38 @@ jobs:
             fi
           fi
 
+      - name: 5.10 兼容 shim (vm_flags_set/clear)
+        if: ${{ inputs.kernel_version == '5.10' }}
+        run: |
+          set -euo pipefail
+          MM="$KERNEL_ROOT/common/include/linux/mm.h"
+          echo "--- 打补丁前现场 ---"
+          grep -n "VM_PAD_MASK" "$KERNEL_ROOT/common/mm/mmap.c" | head -5 || true
+          if grep -q "static inline void vm_flags_clear" "$MM"; then
+            echo "vm_flags_clear 已存在，跳过"
+            exit 0
+          fi
+          python3 - "$MM" <<'PYSHIM'
+          import sys
+          p = sys.argv[1]
+          s = open(p).read()
+          shim = """
+          /* --- ci shim: 5.10 没有 6.1 引入的 vm_flags helpers，BakaSU 补丁会用到 --- */
+          static inline void vm_flags_set(struct vm_area_struct *vma, vm_flags_t flags)
+          {
+          	vma->vm_flags |= flags;
+          }
+          static inline void vm_flags_clear(struct vm_area_struct *vma, vm_flags_t flags)
+          {
+          	vma->vm_flags &= ~flags;
+          }
+          """
+          i = s.rstrip().rfind("#endif")
+          open(p, "w").write(s[:i] + shim + s[i:])
+          print("shim 插入完成:", p)
+          PYSHIM
+          grep -n "static inline void vm_flags_clear" "$MM"
+
       - name: 编译内核
         id: compile_kernel
         uses: nick-fields/retry@v4
