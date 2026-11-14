@@ -1646,6 +1646,23 @@ jobs:
           retention-days: 7
           compression-level: 9
 
+      - name: 排障 - 把失败日志提交到 ci-log 分支
+        if: ${{ always() && steps.compile_kernel.outcome == 'failure' }}
+        run: |
+          set -x
+          cd "$GITHUB_WORKSPACE"
+          mkdir -p .ci
+          cp -f build-logs/*.log .ci/ 2>/dev/null || true
+          cp -f build-logs/summary.txt .ci/ 2>/dev/null || true
+          ls -la .ci || true
+          tail -c 400000 .ci/compile-attempt-1.log > .ci/last-build.log 2>/dev/null || true
+          wc -c .ci/last-build.log 2>/dev/null || true
+          git config user.name "ci-log"
+          git config user.email "ci@localhost"
+          git add -f .ci || true
+          git commit -m "ci: 失败日志 run=$GITHUB_RUN_ID" || true
+          git push -f origin "HEAD:refs/heads/ci-log" || echo "push 失败"
+
       # - name: 应用 KPM 补丁 (SukiSU/BakaSU/Next)
       #   if: startsWith(inputs.use_kpm, 'patched') && (inputs.ksu_variant == 'SukiSU' || inputs.ksu_variant == 'BakaSU' || inputs.ksu_variant == 'Next')
       #   run: |
